@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AetherHealth AI — Intelligent Disease Prediction & Healthcare Assistant</title>
+  <meta name="description" content="AI-powered medical symptom checker, disease prediction, and clinical triage assistant trained on 700+ health conditions.">
+  
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Mapbox GL JS: nearby hospitals map + driving directions -->
+  <link href="https://api.mapbox.com/mapbox-gl-js/v3.5.2/mapbox-gl.css" rel="stylesheet">
+  <script src="https://api.mapbox.com/mapbox-gl-js/v3.5.2/mapbox-gl.js"></script>
+  <script>
+    // Public Mapbox token, injected server-side from MAPBOX_PUBLIC_TOKEN in .env.
+    // Safe to expose to the browser (unlike the secret token used server-side).
+    window.MAPBOX_TOKEN = "{{ mapbox_token }}";
+  </script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          animation: {
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'bounce-slow': 'bounce 4s infinite',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Scrollbar */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #F5F7F5;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #14b8a6;
+    }
+  </style>
+</head>
+<body class="bg-[#F5F7F5] text-slate-900 font-sans min-h-screen flex flex-col selection:bg-teal-500 selection:text-slate-950">
+
+  <!-- ==================== STICKY TOP NAVBAR ==================== -->
+  <header class="sticky top-0 z-40 w-full backdrop-blur-md bg-white/80 border-b border-slate-200/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      
+      <!-- Brand Logo -->
+      <a href="#" class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-500 to-cyan-400 p-0.5 shadow-lg shadow-teal-500/20 flex items-center justify-center">
+          <div class="w-full h-full bg-[#F5F7F5] rounded-[10px] flex items-center justify-center">
+            <svg class="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+            </svg>
+          </div>
+        </div>
+        <div>
+          <span class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-slate-900 via-slate-700 to-slate-500 bg-clip-text text-transparent">
+            Aether<span class="text-teal-600">Health</span>
+          </span>
+        </div>
+      </a>
+
+      <!-- Nav Links -->
+      <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
+        <a href="#hero" class="hover:text-teal-600 transition-colors">Home</a>
+        <a href="#checker" class="hover:text-teal-600 transition-colors">Symptom Checker</a>
+        <a href="#features" class="hover:text-teal-600 transition-colors">Health Info</a>
+        <a href="#stats" class="hover:text-teal-600 transition-colors">About Us</a>
+        <a href="#disclaimer" class="hover:text-teal-600 transition-colors">Contact</a>
+      </nav>
+
+      <!-- CTA Buttons -->
+      <div class="flex items-center gap-3">
+        <button id="navHospitalsBtn" class="hidden sm:inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
+          🏥 Hospitals
+        </button>
+        <button id="navAdvancementBtn" class="hidden sm:inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
+          🚀 Roadmap
+        </button>
+        <button id="navAuthBtn" class="hidden sm:inline-flex text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
+          Login
+        </button>
+        <a href="#checker" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-slate-950 shadow-lg shadow-teal-500/25 transition-all transform hover:-translate-y-0.5">
+          Get Started
+        </a>
+      </div>
+
+    </div>
+  </header>
+
+
+  <!-- ==================== HERO SECTION ==================== -->
+  <section id="hero" class="relative pt-12 pb-20 overflow-hidden bg-[#F5F7F5]">
+    <div class="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-teal-500/10 rounded-full blur-3xl pointer-events-none"></div>
+    
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        
+        <!-- Left Content -->
+        <div class="lg:col-span-7 space-y-8 text-center lg:text-left">
+          
+          <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-teal-50 border border-teal-200 text-teal-700 text-xs font-semibold tracking-wide">
+            <span class="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></span>
+            AI-Powered Clinical Diagnostics & Triage Engine
+          </div>
+
+          <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.15]">
+            Intelligent Symptom Analysis & <span class="bg-gradient-to-r from-teal-600 via-cyan-600 to-teal-700 bg-clip-text text-transparent">Instant Healthcare Triage</span>
+          </h1>
+
+          <p class="text-lg text-slate-600 max-w-2xl mx-auto lg:mx-0 leading-relaxed font-normal">
+            Analyze your symptoms in seconds with our machine learning model trained on 770+ diseases. Receive instant clinical urgency guidance, precautions, dietary advice, and workout recommendations.
+          </p>
+
+          <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
+            <a href="#checker" class="w-full sm:w-auto px-8 py-4 rounded-2xl text-base font-bold bg-gradient-to-r from-teal-400 to-cyan-500 text-slate-950 shadow-xl shadow-teal-500/25 hover:from-teal-300 hover:to-cyan-400 transition-all transform hover:-translate-y-1 flex items-center justify-center gap-3">
+              <span>Check Your Symptoms</span>
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+              </svg>
+            </a>
+            
+            <a href="#features" class="w-full sm:w-auto px-8 py-4 rounded-2xl text-base font-semibold text-slate-600 bg-white/90 hover:bg-slate-200 border border-slate-300/80 transition-all flex items-center justify-center gap-2">
+              Learn More
+            </a>
+          </div>
+
+          <!-- Trust Badges -->
+          <div class="pt-6 border-t border-slate-200/80 flex items-center justify-center lg:justify-start gap-6 text-slate-500 text-xs font-medium">
+            <div class="flex items-center gap-2">
+              <svg class="w-4 h-4 text-teal-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+              </svg>
+              <span>Instant ML Triage</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <svg class="w-4 h-4 text-teal-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+              </svg>
+              <span>377 Recognized Symptoms</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <svg class="w-4 h-4 text-teal-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+              </svg>
+              <span>Voice Assistant Compatible</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Right Column: 3D Doctor Illustration & Floating Feature Callouts -->
+        <div class="lg:col-span-5 relative flex items-center justify-center">
+          <div class="w-80 h-80 sm:w-96 sm:h-96 rounded-full bg-gradient-to-tr from-teal-500/20 to-cyan-400/20 blur-2xl absolute"></div>
+
+          <!-- 3D Doctor Image -->
+          <div class="relative z-10 w-72 sm:w-96 transition-transform hover:scale-105 duration-500">
+            <img src="/static/images/hero_doctor.png" alt="AI Medical Doctor Character" class="w-full h-auto drop-shadow-[0_20px_40px_rgba(20,184,166,0.3)] rounded-3xl" />
+          </div>
+
+          <!-- Callout Card 1 -->
+          <div class="absolute -top-4 -left-6 z-20 hidden sm:flex items-center gap-3 p-3.5 rounded-2xl bg-white/90 border border-slate-300/80 backdrop-blur-xl shadow-xl">
+            <div class="w-10 h-10 rounded-xl bg-teal-500/20 text-teal-600 flex items-center justify-center font-bold text-lg">🩺</div>
+            <div>
+              <p class="text-xs font-bold text-slate-900">Smart Symptom Analysis</p>
+              <p class="text-[10px] text-slate-500">ML multi-symptom lookup</p>
+            </div>
+          </div>
+
+          <!-- Callout Card 2 -->
+          <div class="absolute top-1/2 -right-8 z-20 hidden sm:flex items-center gap-3 p-3.5 rounded-2xl bg-white/90 border border-slate-300/80 backdrop-blur-xl shadow-xl">
+            <div class="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-600 flex items-center justify-center font-bold text-lg">📋</div>
+            <div>
+              <p class="text-xs font-bold text-slate-900">Health Recommendations</p>
+              <p class="text-[10px] text-slate-500">Precautions, diet & workouts</p>
+            </div>
+          </div>
+
+          <!-- Callout Card 3 -->
+          <div class="absolute -bottom-6 left-4 z-20 hidden sm:flex items-center gap-3 p-3.5 rounded-2xl bg-white/90 border border-slate-300/80 backdrop-blur-xl shadow-xl">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-600 flex items-center justify-center font-bold text-lg">🚨</div>
+            <div>
+              <p class="text-xs font-bold text-slate-900">When to See a Doctor</p>
+              <p class="text-[10px] text-slate-500">Emergency & Triage classification</p>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ==================== WHAT YOU CAN DO ==================== -->
+  <section id="features" class="py-20 bg-white/60 border-y border-slate-200/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-3xl mx-auto space-y-4 mb-16">
+        <h2 class="text-xs font-bold text-teal-600 tracking-wider uppercase">What You Can Do</h2>
+        <p class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+          Comprehensive Healthcare Solutions
+        </p>
+        <p class="text-slate-500 text-base">
+          Empowering patients with instant machine learning predictions, structured medical precautions, and emergency triage.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        
+        <!-- Card 1 -->
+        <a href="#checker" class="group relative p-6 rounded-3xl bg-[#F5F7F5]/80 border border-slate-200/80 hover:border-teal-500/50 transition-all duration-300 transform hover:-translate-y-1.5 shadow-lg">
+          <div class="relative z-10 space-y-4">
+            <div class="flex items-center justify-between">
+              <div class="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-2xl shadow-inner group-hover:scale-110 transition-transform">🩺</div>
+              <span class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-white text-slate-600 border border-slate-200 uppercase tracking-wider">ML Engine</span>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900 group-hover:text-teal-700 transition-colors">Symptom Checker</h3>
+            <p class="text-sm text-slate-500 leading-relaxed">Search and select symptoms from 370+ clinical indicators for multi-symptom disease matching.</p>
+            <div class="pt-2 flex items-center gap-2 text-xs font-semibold text-teal-600">
+              <span>Start Checker</span> →
+            </div>
+          </div>
+        </a>
+
+        <!-- Card 2 -->
+        <a href="#checker" class="group relative p-6 rounded-3xl bg-[#F5F7F5]/80 border border-slate-200/80 hover:border-blue-500/50 transition-all duration-300 transform hover:-translate-y-1.5 shadow-lg">
+          <div class="relative z-10 space-y-4">
+            <div class="flex items-center justify-between">
+              <div class="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-2xl shadow-inner group-hover:scale-110 transition-transform">📚</div>
+              <span class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-white text-slate-600 border border-slate-200 uppercase tracking-wider">Medical Data</span>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900 group-hover:text-teal-700 transition-colors">Health Library</h3>
+            <p class="text-sm text-slate-500 leading-relaxed">Access clinical condition overviews, precautions, dietary advice, and tailored workouts.</p>
+            <div class="pt-2 flex items-center gap-2 text-xs font-semibold text-teal-600">
+              <span>View Data</span> →
+            </div>
+          </div>
+        </a>
+
+        <!-- Card 3 -->
+        <a href="#checker" class="group relative p-6 rounded-3xl bg-[#F5F7F5]/80 border border-slate-200/80 hover:border-emerald-500/50 transition-all duration-300 transform hover:-translate-y-1.5 shadow-lg">
+          <div class="relative z-10 space-y-4">
+            <div class="flex items-center justify-between">
+              <div class="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-2xl shadow-inner group-hover:scale-110 transition-transform">📑</div>
+              <span class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-white text-slate-600 border border-slate-200 uppercase tracking-wider">Session Log</span>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900 group-hover:text-teal-700 transition-colors">Health Records</h3>
+            <p class="text-sm text-slate-500 leading-relaxed">Review symptom checks, confidence levels, and clinical triage advisories in real-time.</p>
+            <div class="pt-2 flex items-center gap-2 text-xs font-semibold text-teal-600">
+              <span>Review Records</span> →
+            </div>
+          </div>
+        </a>
+
+        <!-- Card 4 -->
+        <a href="#checker" class="group relative p-6 rounded-3xl bg-[#F5F7F5]/80 border border-slate-200/80 hover:border-amber-500/50 transition-all duration-300 transform hover:-translate-y-1.5 shadow-lg">
+          <div class="relative z-10 space-y-4">
+            <div class="flex items-center justify-between">
+              <div class="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-2xl shadow-inner group-hover:scale-110 transition-transform">🔔</div>
+              <span class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-white text-slate-600 border border-slate-200 uppercase tracking-wider">24/7 Care</span>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900 group-hover:text-teal-700 transition-colors">Health Reminders</h3>
+            <p class="text-sm text-slate-500 leading-relaxed">Receive automated symptom suggestions when prediction confidence requires further input.</p>
+            <div class="pt-2 flex items-center gap-2 text-xs font-semibold text-teal-600">
+              <span>Get Care</span> →
+            </div>
+          </div>
+        </a>
+
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ==================== STATS BAR ==================== -->
+  <section id="stats" class="py-16 bg-[#F5F7F5] border-b border-slate-200/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="p-8 sm:p-10 rounded-3xl bg-white/90 border border-slate-200/90 backdrop-blur-xl shadow-2xl">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
+          
+          <div class="md:col-span-3 flex flex-col items-center justify-center text-center border-b md:border-b-0 md:border-r border-slate-200 pb-6 md:pb-0 md:pr-6">
+            <div class="w-24 h-24 mb-3 flex items-center justify-center">
+              <img src="/static/images/shield_icon.png" alt="3D Shield Icon" class="w-full h-full object-contain drop-shadow-[0_10px_20px_rgba(20,184,166,0.4)]" />
+            </div>
+            <p class="text-xs font-bold text-teal-600 uppercase tracking-widest">Clinical Grade Security</p>
+          </div>
+
+          <div class="md:col-span-9 grid grid-cols-2 lg:grid-cols-4 gap-6 text-center">
+            <div class="space-y-1">
+              <div class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">100% Private</div>
+              <div class="text-sm font-bold text-teal-700">Trusted & Secure</div>
+              <div class="text-xs text-slate-500">No Data Saved</div>
+            </div>
+            <div class="space-y-1">
+              <div class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">10K+</div>
+              <div class="text-sm font-bold text-teal-700">Happy Users</div>
+              <div class="text-xs text-slate-500">Community Tested</div>
+            </div>
+            <div class="space-y-1">
+              <div class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">85%+</div>
+              <div class="text-sm font-bold text-teal-700">Model Accuracy</div>
+              <div class="text-xs text-slate-500">773 Diseases</div>
+            </div>
+            <div class="space-y-1">
+              <div class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">24/7 AI</div>
+              <div class="text-sm font-bold text-teal-700">Available</div>
+              <div class="text-xs text-slate-500">Instant Triage</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ==================== SYMPTOM CHECKER INTERFACE ==================== -->
+  <section id="checker" class="py-16 bg-[#F5F7F5]">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-2xl mx-auto mb-10 space-y-3">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-50 border border-teal-200 text-teal-700 text-xs font-bold uppercase tracking-wider">
+          <span>🔍 Multi-Symptom Checklist</span>
+        </div>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+          Check Your Symptoms
+        </h2>
+        <p class="text-slate-500 text-sm">
+          Search or select from recognized symptom indicators below. Pick at least 1 symptom to perform AI triage.
+        </p>
+      </div>
+
+      <div class="p-6 sm:p-8 rounded-3xl bg-white/90 border border-slate-200 backdrop-blur-xl shadow-2xl space-y-6">
+        
+        <!-- Search & Voice Mic -->
+        <div class="flex flex-col sm:flex-row gap-3">
+          <div class="relative flex-1">
+            <svg class="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            <input
+              type="text"
+              id="searchInput"
+              placeholder="Search symptoms (e.g. fever, chest pain, headache)..."
+              class="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-[#F5F7F5] border border-slate-200 text-slate-900 placeholder-slate-500 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm font-medium transition-all"
+            />
+          </div>
+
+          <button
+            type="button"
+            id="voiceBtn"
+            class="px-5 py-3.5 rounded-2xl border border-slate-200 bg-[#F5F7F5] text-teal-600 hover:border-teal-500/50 hover:bg-white text-xs font-extrabold flex items-center justify-center gap-2 transition-all"
+          >
+            <span>🎤 Speak Symptoms</span>
+          </button>
+        </div>
+
+        <!-- Quick Pick Chips -->
+        <div class="space-y-2">
+          <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Quick Select Common Symptoms:</label>
+          <div class="flex flex-wrap gap-2" id="quickPicksContainer">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+
+        <!-- Selected Symptoms Bar -->
+        <div id="selectedBar" class="hidden p-4 rounded-2xl bg-[#F5F7F5]/80 border border-teal-500/30 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-teal-700">Selected Symptoms (<span id="selectedCount">0</span>)</span>
+            <button type="button" id="clearAllBtn" class="text-xs text-rose-400 hover:text-rose-300 font-semibold">Clear All</button>
+          </div>
+          <div class="flex flex-wrap gap-2" id="selectedTags"></div>
+        </div>
+
+        <!-- Symptom Checklist Grid -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider">
+            <span>Symptom Directory (<span id="matchCount">0</span> matching)</span>
+          </div>
+
+          <div id="symptomGrid" class="max-h-64 overflow-y-auto pr-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 custom-scrollbar">
+            <!-- Populated dynamically from /symptoms API -->
+          </div>
+        </div>
+
+        <!-- Action Submit CTA -->
+        <button
+          type="button"
+          id="predictBtn"
+          disabled
+          class="w-full py-4 rounded-2xl text-base font-extrabold shadow-xl transition-all flex items-center justify-center gap-3 bg-slate-200 text-slate-500 cursor-not-allowed border border-slate-300"
+        >
+          <span>Analyze Symptoms & Predict Condition</span>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+        </button>
+
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ==================== RESULTS DASHBOARD ==================== -->
+  <div id="resultsContainer" class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 hidden">
+    <!-- Populated dynamically via JS when prediction arrives -->
+  </div>
+
+
+  <!-- ==================== EMERGENCY LOCATOR MODAL ==================== -->
+  <div id="hospitalModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md hidden">
+    <div class="w-full max-w-2xl bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 relative">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-red-500/20 text-red-600 flex items-center justify-center font-bold text-xl">🏥</div>
+          <div>
+            <h3 class="text-xl font-extrabold text-slate-900">Emergency Medical Care Locator</h3>
+            <p class="text-xs text-slate-500">Nearest emergency trauma centers and hospitals</p>
+          </div>
+        </div>
+        <button id="closeModalBtn" class="w-8 h-8 rounded-full bg-slate-200 text-slate-500 hover:text-slate-900 flex items-center justify-center font-bold">✕</button>
+      </div>
+
+      <div class="p-4 rounded-2xl bg-red-950/90 border border-red-500/40 flex items-center justify-between gap-4">
+        <div>
+          <p class="text-xs font-bold text-red-200 uppercase tracking-wider">National Medical Emergency Helplines</p>
+          <p class="text-lg font-extrabold text-white">Dial 112</p>
+        </div>
+        <a href="tel:112" class="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-extrabold text-xs shadow-lg shadow-red-600/40 flex items-center gap-2">
+          <span>📞 Call 112</span>
+        </a>
+      </div>
+
+      <div id="hospitalMapContainer" class="h-64 w-full rounded-2xl bg-[#F5F7F5] border border-slate-200 relative overflow-hidden flex items-center justify-center">
+        <div class="absolute inset-0 bg-[radial-gradient(#14b8a6_1px,transparent_1px)] [background-size:16px_16px] opacity-20"></div>
+        <div class="relative z-10 text-center space-y-1">
+          <span class="text-3xl">📍</span>
+          <p class="text-xs font-bold text-teal-700">Locating you…</p>
+          <p class="text-[10px] text-slate-500">Grant location access to scan nearby hospitals</p>
+        </div>
+      </div>
+      <p id="routeInfo" class="hidden text-xs font-semibold text-teal-700"></p>
+
+      <div class="space-y-3">
+        <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Nearby Emergency Centers</h4>
+        <div id="hospitalListContainer" class="space-y-2">
+          <p class="text-xs text-slate-500">Waiting for location…</p>
+        </div>
+      </div>
+
+      <button id="closeModalBtn2" class="w-full py-3 rounded-2xl bg-slate-200 hover:bg-slate-700 text-slate-800 font-bold text-sm">Close Locator</button>
+    </div>
+  </div>
+
+
+  <!-- ==================== LOGIN / SIGNUP MODAL ==================== -->
+  <div id="authModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md hidden">
+    <div class="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 relative">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-4">
+        <h3 id="authModalTitle" class="text-xl font-extrabold text-slate-900">Log In</h3>
+        <button id="closeAuthModalBtn" class="w-8 h-8 rounded-full bg-slate-200 text-slate-500 hover:text-slate-900 flex items-center justify-center font-bold">✕</button>
+      </div>
+
+      <p id="authError" class="hidden text-xs font-medium text-red-600 bg-red-950/40 border border-red-500/30 rounded-xl px-3 py-2"></p>
+
+      <form id="authForm" class="space-y-4">
+        <div>
+          <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Email</label>
+          <input id="authEmail" type="email" required autocomplete="email"
+            class="mt-1 w-full px-4 py-3 rounded-xl bg-[#F5F7F5] border border-slate-200 text-slate-900 text-sm focus:outline-none focus:border-teal-500" />
+        </div>
+        <div>
+          <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Password</label>
+          <input id="authPassword" type="password" required minlength="8" autocomplete="current-password"
+            class="mt-1 w-full px-4 py-3 rounded-xl bg-[#F5F7F5] border border-slate-200 text-slate-900 text-sm focus:outline-none focus:border-teal-500" />
+          <p class="text-[10px] text-slate-500 mt-1">Minimum 8 characters.</p>
+        </div>
+        <button type="submit" id="authSubmitBtn"
+          class="w-full py-3 rounded-2xl bg-gradient-to-r from-teal-500 to-cyan-500 text-slate-950 font-bold text-sm shadow-lg shadow-teal-500/25">
+          Log In
+        </button>
+      </form>
+
+      <p class="text-xs text-slate-500 text-center">
+        <span id="authSwitchPrompt">Don't have an account?</span>
+        <button id="authSwitchBtn" class="text-teal-600 font-semibold hover:underline">Sign up</button>
+      </p>
+    </div>
+  </div>
+
+
+  <!-- ==================== ADVANCEMENT / ROADMAP MODAL ==================== -->
+  <div id="advancementModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md hidden">
+    <div class="w-full max-w-lg max-h-[85vh] overflow-y-auto custom-scrollbar bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 relative">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-4">
+        <div>
+          <h3 class="text-xl font-extrabold text-slate-900">What's Next 🚀</h3>
+          <p class="text-xs text-slate-500">Upcoming advancements to AetherHealth AI</p>
+        </div>
+        <button id="closeAdvancementBtn" class="w-8 h-8 rounded-full bg-slate-200 text-slate-500 hover:text-slate-900 flex items-center justify-center font-bold">✕</button>
+      </div>
+
+      <div class="space-y-4">
+        <div class="p-4 rounded-2xl bg-[#F5F7F5]/80 border border-slate-200/80">
+          <p class="text-sm font-bold text-teal-700 mb-1">🎙️ Voice-first symptom intake</p>
+          <p class="text-xs text-slate-500 leading-relaxed">Full conversational triage powered by the bundled voice assistant — describe symptoms out loud, no typing needed.</p>
+        </div>
+        <div class="p-4 rounded-2xl bg-[#F5F7F5]/80 border border-slate-200/80">
+          <p class="text-sm font-bold text-teal-700 mb-1">🏥 OPD booking agent</p>
+          <p class="text-xs text-slate-500 leading-relaxed">Auto-book an appointment at the nearest suitable hospital the moment a condition is flagged urgent — no manual calls required.</p>
+        </div>
+        <div class="p-4 rounded-2xl bg-[#F5F7F5]/80 border border-slate-200/80">
+          <p class="text-sm font-bold text-teal-700 mb-1">📊 Symptom history & trends</p>
+          <p class="text-xs text-slate-500 leading-relaxed">Track assessments over time, tied to your account, to spot recurring or worsening patterns.</p>
+        </div>
+        <div class="p-4 rounded-2xl bg-[#F5F7F5]/80 border border-slate-200/80">
+          <p class="text-sm font-bold text-teal-700 mb-1">🧠 Deeper model grounding</p>
+          <p class="text-xs text-slate-500 leading-relaxed">Retrieval-augmented answers over a larger, sourced medical knowledge base instead of static lookup tables.</p>
+        </div>
+        <div class="p-4 rounded-2xl bg-[#F5F7F5]/80 border border-slate-200/80">
+          <p class="text-sm font-bold text-teal-700 mb-1">🩺 Live turn-by-turn hospital routing</p>
+          <p class="text-xs text-slate-500 leading-relaxed">Now in preview — driving directions from your location straight to the nearest hospital, drawn on the map.</p>
+        </div>
+      </div>
+
+      <button id="closeAdvancementBtn2" class="w-full py-3 rounded-2xl bg-slate-200 hover:bg-slate-700 text-slate-800 font-bold text-sm">Close</button>
+    </div>
+  </div>
+
+
+  <!-- ==================== PERSISTENT MEDICAL DISCLAIMER BAR ==================== -->
+  <footer id="disclaimer" class="sticky bottom-0 z-40 w-full bg-[#F5F7F5]/95 border-t border-slate-200/90 backdrop-blur-md py-3 px-4 sm:px-6">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+      
+      <div class="flex items-center gap-3">
+        <div class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-600 flex items-center justify-center font-bold text-sm shrink-0">
+          ⚠️
+        </div>
+        <p class="text-xs text-slate-600 font-medium leading-tight max-w-4xl">
+          <strong class="text-amber-600 font-bold">Important Medical Disclaimer:</strong> AetherHealth AI is an educational diagnostic support system powered by machine learning. It is <strong>NOT a substitute for professional medical advice, clinical diagnosis, or treatment</strong>. Always consult a qualified healthcare provider for medical concerns.
+        </p>
+      </div>
+
+      
+
+    </div>
+  </footer>
+
+
+  <!-- ==================== CLIENT JAVASCRIPT ==================== -->
+  <script>
+    const API_BASE = window.location.origin;
+    let allSymptoms = [];
+    let selectedSymptoms = new Set();
+
+    // -----------------------------------------------------------
+    // Auth state (JWT stored in localStorage)
+    // -----------------------------------------------------------
+    const AUTH_KEY = 'aetherhealth_auth';
+
+    function getAuth() {
+      try { return JSON.parse(localStorage.getItem(AUTH_KEY)); } catch { return null; }
+    }
+    function setAuth(data) {
+      if (data) localStorage.setItem(AUTH_KEY, JSON.stringify(data));
+      else localStorage.removeItem(AUTH_KEY);
+      updateAuthUI();
+    }
+    function getToken() {
+      const a = getAuth();
+      return a ? a.token : null;
+    }
+    function authHeaders() {
+      const t = getToken();
+      return t ? { 'Authorization': `Bearer ${t}` } : {};
+    }
+    function updateAuthUI() {
+      const a = getAuth();
+      const btn = document.getElementById('navAuthBtn');
+      if (a && a.user) {
+        btn.textContent = `Logout (${a.user.email})`;
+        btn.onclick = () => setAuth(null);
+      } else {
+        btn.textContent = 'Login';
+        btn.onclick = () => openAuthModal('login');
+      }
+    }
+
+    let authMode = 'login';
+    let pendingAfterAuth = null;
+
+    function openAuthModal(mode, after) {
+      authMode = mode;
+      pendingAfterAuth = after || null;
+      document.getElementById('authModalTitle').textContent = mode === 'login' ? 'Log In' : 'Sign Up';
+      document.getElementById('authSubmitBtn').textContent = mode === 'login' ? 'Log In' : 'Create Account';
+      document.getElementById('authSwitchPrompt').textContent = mode === 'login' ? "Don't have an account?" : 'Already have an account?';
+      document.getElementById('authSwitchBtn').textContent = mode === 'login' ? 'Sign up' : 'Log in';
+      document.getElementById('authError').classList.add('hidden');
+      document.getElementById('authForm').reset();
+      document.getElementById('authModal').classList.remove('hidden');
+    }
+    function closeAuthModal() {
+      document.getElementById('authModal').classList.add('hidden');
+    }
+
+    document.getElementById('closeAuthModalBtn').onclick = closeAuthModal;
+    document.getElementById('authSwitchBtn').onclick = () => openAuthModal(authMode === 'login' ? 'signup' : 'login', pendingAfterAuth);
+
+    document.getElementById('authForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('authEmail').value.trim();
+      const password = document.getElementById('authPassword').value;
+      const errEl = document.getElementById('authError');
+      errEl.classList.add('hidden');
+
+      const endpoint = authMode === 'login' ? '/api/auth/login' : '/api/auth/register';
+      const btn = document.getElementById('authSubmitBtn');
+      btn.disabled = true;
+      try {
+        const res = await fetch(`${API_BASE}${endpoint}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (!res.ok || data.status === 'error') {
+          throw new Error(data.message || 'Something went wrong.');
+        }
+        setAuth({ token: data.token, user: data.user });
+        closeAuthModal();
+        if (pendingAfterAuth) { const fn = pendingAfterAuth; pendingAfterAuth = null; fn(); }
+      } catch (err) {
+        errEl.textContent = err.message;
+        errEl.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+      }
+    };
+
+    // -----------------------------------------------------------
+    // Advancement / roadmap modal
+    // -----------------------------------------------------------
+    function openAdvancementModal() {
+      document.getElementById('advancementModal').classList.remove('hidden');
+    }
+    function closeAdvancementModal() {
+      document.getElementById('advancementModal').classList.add('hidden');
+    }
+    document.getElementById('navAdvancementBtn').onclick = openAdvancementModal;
+    document.getElementById('closeAdvancementBtn').onclick = closeAdvancementModal;
+    document.getElementById('closeAdvancementBtn2').onclick = closeAdvancementModal;
+
+    // Nav "Hospitals" button opens the locator directly (no need to run a prediction first)
+    document.getElementById('navHospitalsBtn').onclick = () => openModal();
+
+    updateAuthUI();
+
+    const quickPicks = [
+      'fever', 'cough', 'headache', 'chest_pain', 
+      'fatigue', 'nausea', 'vomiting', 'breathlessness', 
+      'dizziness', 'joint_pain', 'skin_rash', 'itching'
+    ];
+
+    // Fetch symptom checklist from Flask /symptoms endpoint
+    async function loadSymptoms() {
+      try {
+        const res = await fetch(`${API_BASE}/symptoms`);
+        const data = await res.json();
+        if (data.symptoms) {
+          allSymptoms = data.symptoms;
+          renderQuickPicks();
+          renderSymptomsGrid();
+        }
+      } catch (err) {
+        console.error("Failed to fetch symptoms:", err);
+      }
+    }
+
+    function renderQuickPicks() {
+      const container = document.getElementById('quickPicksContainer');
+      container.innerHTML = '';
+      quickPicks.forEach(sym => {
+        const isSelected = selectedSymptoms.has(sym);
+        const btn = document.createElement('button');
+        btn.className = `px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+          isSelected 
+            ? 'bg-teal-500 border-teal-400 text-slate-950 shadow-md shadow-teal-500/20' 
+            : 'bg-[#F5F7F5] border-slate-200 text-slate-600 hover:border-slate-300'
+        }`;
+        btn.textContent = (isSelected ? '✓ ' : '+ ') + sym.replace(/_/g, ' ');
+        btn.onclick = () => toggleSymptom(sym);
+        container.appendChild(btn);
+      });
+    }
+
+    function renderSymptomsGrid() {
+      const grid = document.getElementById('symptomGrid');
+      const search = document.getElementById('searchInput').value.toLowerCase().replace(/\s+/g, '_');
+      grid.innerHTML = '';
+
+      const filtered = allSymptoms.filter(s => 
+        s.toLowerCase().includes(search) || 
+        s.replace(/_/g, ' ').toLowerCase().includes(document.getElementById('searchInput').value.toLowerCase())
+      );
+
+      document.getElementById('matchCount').textContent = filtered.length;
+
+      filtered.forEach(sym => {
+        const isSelected = selectedSymptoms.has(sym);
+        const card = document.createElement('div');
+        card.className = `p-3 rounded-xl border text-xs font-medium cursor-pointer transition-all flex items-center justify-between ${
+          isSelected 
+            ? 'bg-teal-950/90 border-teal-500/60 text-teal-200 shadow-sm' 
+            : 'bg-[#F5F7F5]/60 border-slate-200/80 text-slate-600 hover:border-slate-300 hover:bg-[#F5F7F5]'
+        }`;
+        card.innerHTML = `
+          <span class="capitalize">${sym.replace(/_/g, ' ')}</span>
+          <input type="checkbox" ${isSelected ? 'checked' : ''} class="rounded text-teal-500 focus:ring-0 border-slate-300 bg-white pointer-events-none" />
+        `;
+        card.onclick = () => toggleSymptom(sym);
+        grid.appendChild(card);
+      });
+    }
+
+    function toggleSymptom(sym) {
+      if (selectedSymptoms.has(sym)) {
+        selectedSymptoms.delete(sym);
+      } else {
+        selectedSymptoms.add(sym);
+      }
+      updateUIState();
+    }
+
+    function updateUIState() {
+      renderQuickPicks();
+      renderSymptomsGrid();
+      renderSelectedBar();
+
+      const predictBtn = document.getElementById('predictBtn');
+      if (selectedSymptoms.size > 0) {
+        predictBtn.disabled = false;
+        predictBtn.className = "w-full py-4 rounded-2xl text-base font-extrabold shadow-xl transition-all flex items-center justify-center gap-3 bg-gradient-to-r from-teal-400 to-cyan-500 hover:from-teal-300 hover:to-cyan-400 text-slate-950 shadow-teal-500/25 transform hover:-translate-y-0.5 cursor-pointer";
+      } else {
+        predictBtn.disabled = true;
+        predictBtn.className = "w-full py-4 rounded-2xl text-base font-extrabold shadow-xl transition-all flex items-center justify-center gap-3 bg-slate-200 text-slate-500 cursor-not-allowed border border-slate-300";
+      }
+    }
+
+    function renderSelectedBar() {
+      const selectedBar = document.getElementById('selectedBar');
+      const selectedTags = document.getElementById('selectedTags');
+      const countEl = document.getElementById('selectedCount');
+
+      countEl.textContent = selectedSymptoms.size;
+
+      if (selectedSymptoms.size === 0) {
+        selectedBar.classList.add('hidden');
+        return;
+      }
+
+      selectedBar.classList.remove('hidden');
+      selectedTags.innerHTML = '';
+
+      selectedSymptoms.forEach(sym => {
+        const tag = document.createElement('span');
+        tag.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-teal-950 text-teal-200 border border-teal-500/40 text-xs font-semibold";
+        tag.innerHTML = `
+          <span class="capitalize">${sym.replace(/_/g, ' ')}</span>
+          <button class="hover:text-white font-bold ml-1">×</button>
+        `;
+        tag.querySelector('button').onclick = (e) => {
+          e.stopPropagation();
+          toggleSymptom(sym);
+        };
+        selectedTags.appendChild(tag);
+      });
+    }
+
+    document.getElementById('searchInput').addEventListener('input', renderSymptomsGrid);
+    document.getElementById('clearAllBtn').onclick = () => {
+      selectedSymptoms.clear();
+      updateUIState();
+    };
+
+    // Voice recognition button
+    document.getElementById('voiceBtn').onclick = () => {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        alert("Speech Recognition not supported in this browser. Please use Chrome/Edge or run voice_assistant.py in python!");
+        return;
+      }
+      const rec = new SpeechRecognition();
+      rec.lang = 'en-US';
+      rec.onstart = () => {
+        document.getElementById('voiceBtn').innerHTML = "<span>🎙️ Listening...</span>";
+      };
+      rec.onend = () => {
+        document.getElementById('voiceBtn').innerHTML = "<span>🎤 Speak Symptoms</span>";
+      };
+      rec.onresult = (e) => {
+        const text = e.results[0][0].transcript.toLowerCase();
+        document.getElementById('searchInput').value = text;
+        renderSymptomsGrid();
+        // Auto match symptoms
+        allSymptoms.forEach(sym => {
+          if (text.includes(sym.replace(/_/g, ' ')) || text.includes(sym)) {
+            selectedSymptoms.add(sym);
+          }
+        });
+        updateUIState();
+      };
+      rec.start();
+    };
+
+    // Run prediction call to POST /predict (requires login)
+    document.getElementById('predictBtn').onclick = async () => {
+      if (selectedSymptoms.size === 0) return;
+
+      if (!getToken()) {
+        openAuthModal('login', () => document.getElementById('predictBtn').click());
+        return;
+      }
+
+      const btn = document.getElementById('predictBtn');
+      btn.disabled = true;
+      btn.innerHTML = `<span>Analyzing Symptoms with ML Model...</span>`;
+
+      try {
+        const res = await fetch(`${API_BASE}/predict`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...authHeaders() },
+          body: JSON.stringify({ symptoms: Array.from(selectedSymptoms) })
+        });
+
+        if (res.status === 401) {
+          openAuthModal('login', () => document.getElementById('predictBtn').click());
+          return;
+        }
+
+        const data = await res.json();
+        renderResultCard(data);
+      } catch (err) {
+        alert("Failed to reach Flask backend: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<span>Analyze Symptoms & Predict Condition</span>`;
+      }
+    };
+
+    function renderResultCard(res) {
+      const container = document.getElementById('resultsContainer');
+      container.classList.remove('hidden');
+
+      if (res.status === 'error') {
+        container.innerHTML = `<div class="p-6 rounded-3xl bg-red-950 border border-red-500 text-red-200">${res.message}</div>`;
+        return;
+      }
+
+      const disease = res.best_disease;
+      const confPercent = Math.round((res.confidence || 0) * 100);
+      const level = res.confidence_level || 'LOW';
+      const triage = res.triage || {};
+      const isEmergency = triage.level === 'EMERGENCY';
+
+      const triageBadgeBg = {
+        EMERGENCY: 'bg-red-500 text-white',
+        SEE_DOCTOR: 'bg-amber-500 text-slate-950',
+        SELF_CARE: 'bg-emerald-500 text-slate-950'
+      }[triage.level || 'SELF_CARE'];
+
+      const triageBoxBorder = {
+        EMERGENCY: 'bg-red-950/80 border-red-500/50 text-red-200',
+        SEE_DOCTOR: 'bg-amber-950/80 border-amber-500/50 text-amber-200',
+        SELF_CARE: 'bg-emerald-950/80 border-emerald-500/50 text-emerald-200'
+      }[triage.level || 'SELF_CARE'];
+
+      let precHtml = '';
+      if (res.precautions) {
+        Object.values(res.precautions).filter(Boolean).forEach(p => {
+          precHtml += `<li class="flex items-start gap-2"><span class="text-teal-600 font-bold">•</span><span>${p}</span></li>`;
+        });
+      }
+
+      let dietHtml = '';
+      if (res.diet) {
+        res.diet.forEach(d => {
+          dietHtml += `<span class="px-2.5 py-1 rounded-lg bg-emerald-950/70 border border-emerald-500/30 text-emerald-300 text-xs font-medium">${d}</span>`;
+        });
+      }
+
+      let workoutHtml = '';
+      if (res.workout) {
+        res.workout.forEach(w => {
+          workoutHtml += `<li class="flex items-start gap-2"><span class="text-cyan-600 font-bold">•</span><span>${w}</span></li>`;
+        });
+      }
+
+      let medHtml = '';
+      if (res.medications) {
+        res.medications.forEach(m => {
+          medHtml += `<span class="px-2.5 py-1 rounded-lg bg-amber-950/70 border border-amber-500/30 text-amber-300 text-xs font-medium">${m}</span>`;
+        });
+      }
+
+      let suggestHtml = '';
+      if (level !== 'HIGH' && res.suggested_symptoms && res.suggested_symptoms.length > 0) {
+        let btns = '';
+        res.suggested_symptoms.forEach(s => {
+          btns += `
+            <button onclick="addSuggestedSymptom('${s}')" class="px-3.5 py-2 rounded-xl bg-teal-900/80 hover:bg-teal-700 text-teal-100 text-xs font-semibold border border-teal-500/50 transition-all">
+              + ${s.replace(/_/g, ' ')}
+            </button>
+          `;
+        });
+        suggestHtml = `
+          <div class="p-6 rounded-2xl bg-teal-950/40 border border-teal-500/40 space-y-4">
+            <div class="flex items-center gap-3">
+              <div class="text-2xl">⚡</div>
+              <div>
+                <h4 class="text-sm font-bold text-teal-700">Refine Prediction Accuracy</h4>
+                <p class="text-xs text-slate-600">Confidence is moderate. Click below to add symptoms and re-analyze:</p>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-2 pt-2">${btns}</div>
+          </div>
+        `;
+      }
+
+      container.innerHTML = `
+        <div class="space-y-8">
+          ${isEmergency ? `
+            <div class="p-5 rounded-3xl bg-gradient-to-r from-red-600 via-rose-600 to-red-700 text-white shadow-2xl shadow-red-600/40 border border-red-400 flex flex-col sm:flex-row items-center justify-between gap-4 animate-pulse">
+              <div class="flex items-center gap-4">
+                <div class="text-3xl">⚠️</div>
+                <div>
+                  <h3 class="text-lg font-extrabold uppercase tracking-wide">Emergency Triage Alert</h3>
+                  <p class="text-xs text-red-100 font-medium">Immediate medical evaluation required. Seek care immediately.</p>
+                </div>
+              </div>
+              <button onclick="openModal()" class="px-6 py-3 rounded-2xl bg-white text-red-700 font-extrabold text-sm shadow-xl">
+                Find Nearest Hospital 🏥
+              </button>
+            </div>
+          ` : ''}
+
+          <!-- Triage Badge Card -->
+          <div class="p-6 rounded-3xl border backdrop-blur-xl shadow-2xl ${triageBoxBorder}">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div class="flex items-center gap-4">
+                <div class="text-3xl p-3 rounded-2xl bg-white/80 border border-slate-300/60 shadow-inner">
+                  ${isEmergency ? '🚨' : triage.level === 'SEE_DOCTOR' ? '👨‍⚕️' : '🌿'}
+                </div>
+                <div>
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider ${triageBadgeBg}">
+                      ${triage.badge_text || triage.level}
+                    </span>
+                    <span class="text-xs font-bold text-slate-500">Clinical Triage Guidance</span>
+                  </div>
+                  <h4 class="text-xl font-bold text-slate-900 tracking-tight">${triage.title}</h4>
+                </div>
+              </div>
+              ${isEmergency ? `<a href="tel:112" class="px-5 py-2.5 rounded-2xl bg-red-600 text-white font-extrabold text-sm shadow-lg animate-pulse">Call 112 Now</a>` : ''}
+            </div>
+            <p class="mt-4 text-sm text-slate-600 border-t border-white/10 pt-3">${triage.description}</p>
+          </div>
+
+          <!-- Main Result Box -->
+          <div class="p-8 rounded-3xl bg-white/90 border border-slate-200 backdrop-blur-xl shadow-2xl space-y-8">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-200 pb-8">
+              <div>
+                <span class="text-xs font-bold text-teal-600 tracking-wider uppercase">Primary Prediction</span>
+                <h2 class="text-3xl sm:text-4xl font-black text-slate-900 capitalize tracking-tight mt-1">${disease}</h2>
+              </div>
+              <div class="flex flex-col items-start md:items-end gap-2">
+                <div class="flex items-center gap-3">
+                  <span class="px-3 py-1 rounded-full text-xs font-black uppercase bg-teal-500 text-slate-950">${level} CONFIDENCE</span>
+                  <span class="text-2xl font-black text-slate-900">${confPercent}%</span>
+                </div>
+                <div class="w-48 h-3 bg-slate-200 rounded-full overflow-hidden border border-slate-300">
+                  <div class="h-full bg-gradient-to-r from-teal-500 to-cyan-400" style="width: ${confPercent}%"></div>
+                </div>
+              </div>
+            </div>
+
+            ${res.description ? `
+              <div class="space-y-2">
+                <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Overview</h4>
+                <p class="text-slate-800 text-base bg-[#F5F7F5]/60 p-4 rounded-2xl border border-slate-200/80">${res.description}</p>
+              </div>
+            ` : ''}
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="p-5 rounded-2xl bg-[#F5F7F5]/80 border border-slate-200/80 space-y-3">
+                <div class="text-teal-600 font-bold text-sm">🛡️ Recommended Precautions</div>
+                <ul class="space-y-2 text-xs text-slate-600">${precHtml || '<li class="text-slate-500">Standard care advised</li>'}</ul>
+              </div>
+
+              <div class="p-5 rounded-2xl bg-[#F5F7F5]/80 border border-slate-200/80 space-y-3">
+                <div class="text-emerald-600 font-bold text-sm">🥗 Dietary Guidance</div>
+                <div class="flex flex-wrap gap-1.5">${dietHtml || '<span class="text-slate-500 text-xs">Balanced diet</span>'}</div>
+              </div>
+
+              <div class="p-5 rounded-2xl bg-[#F5F7F5]/80 border border-slate-200/80 space-y-3">
+                <div class="text-cyan-600 font-bold text-sm">🏃‍♂️ Workout & Activity</div>
+                <ul class="space-y-2 text-xs text-slate-600">${workoutHtml || '<li class="text-slate-500">Light activity</li>'}</ul>
+              </div>
+
+              <div class="p-5 rounded-2xl bg-[#F5F7F5]/80 border border-slate-200/80 space-y-3">
+                <div class="text-amber-600 font-bold text-sm">💊 Common Medications</div>
+                <div class="flex flex-wrap gap-1.5">${medHtml || '<span class="text-slate-500 text-xs">Consult doctor</span>'}</div>
+              </div>
+            </div>
+
+            ${suggestHtml}
+          </div>
+        </div>
+      `;
+
+      container.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function addSuggestedSymptom(sym) {
+      selectedSymptoms.add(sym);
+      updateUIState();
+      document.getElementById('predictBtn').click();
+    }
+
+    // -----------------------------------------------------------
+    // Nearby hospitals: geolocation -> /api/hospitals -> Mapbox map + route
+    // -----------------------------------------------------------
+    let hospitalMap = null;
+    let hospitalMarkers = [];
+
+    function openModal() {
+      document.getElementById('hospitalModal').classList.remove('hidden');
+      document.getElementById('routeInfo').classList.add('hidden');
+      locateAndFindHospitals();
+    }
+
+    document.getElementById('closeModalBtn').onclick = () => {
+      document.getElementById('hospitalModal').classList.add('hidden');
+    };
+    document.getElementById('closeModalBtn2').onclick = () => {
+      document.getElementById('hospitalModal').classList.add('hidden');
+    };
+
+    function locateAndFindHospitals() {
+      const listEl = document.getElementById('hospitalListContainer');
+      listEl.innerHTML = `<p class="text-xs text-slate-500">Locating you…</p>`;
+
+      if (!navigator.geolocation) {
+        listEl.innerHTML = `<p class="text-xs text-red-600">Geolocation not supported by this browser.</p>`;
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          initHospitalMap(lat, lng);
+
+          try {
+            const res = await fetch(`${API_BASE}/api/hospitals?lat=${lat}&lng=${lng}`);
+            const data = await res.json();
+            if (data.status === 'error') throw new Error(data.message);
+
+            renderHospitalList(data.results || [], data.note);
+            plotHospitals(data.results || []);
+
+            if (data.results && data.results.length > 0) {
+              drawRouteToNearest(lat, lng, data.results[0]);
+            }
+          } catch (err) {
+            listEl.innerHTML = `<p class="text-xs text-red-600">${err.message}</p>`;
+          }
+        },
+        () => {
+          listEl.innerHTML = `<p class="text-xs text-red-600">Location permission denied. Enable location access in your browser to find nearby hospitals.</p>`;
+        }
+      );
+    }
+
+    function initHospitalMap(lat, lng) {
+      const container = document.getElementById('hospitalMapContainer');
+
+      if (!window.MAPBOX_TOKEN) {
+        container.innerHTML = `<div class="h-full flex items-center justify-center text-xs text-slate-500 p-4 text-center">Mapbox not configured — set MAPBOX_PUBLIC_TOKEN in .env to enable the live map.</div>`;
+        return;
+      }
+
+      // Reset container in case a placeholder or previous map lives here
+      if (hospitalMap) {
+        hospitalMap.remove();
+        hospitalMap = null;
+      }
+      container.innerHTML = '';
+
+      mapboxgl.accessToken = window.MAPBOX_TOKEN;
+      hospitalMap = new mapboxgl.Map({
+        container: 'hospitalMapContainer',
+        style: 'mapbox://styles/mapbox/dark-v11',
+        center: [lng, lat],
+        zoom: 13
+      });
+      hospitalMap.addControl(new mapboxgl.NavigationControl(), 'top-right');
+      hospitalMap.on('load', () => {
+        new mapboxgl.Marker({ color: '#14b8a6' })
+          .setLngLat([lng, lat])
+          .setPopup(new mapboxgl.Popup().setText('Your location'))
+          .addTo(hospitalMap);
+      });
+    }
+
+    function plotHospitals(hospitals) {
+      if (!hospitalMap) return;
+      hospitalMarkers.forEach(m => m.remove());
+      hospitalMarkers = hospitals.map(h =>
+        new mapboxgl.Marker({ color: '#ef4444' })
+          .setLngLat([h.lng, h.lat])
+          .setPopup(new mapboxgl.Popup().setHTML(
+            `<strong>${h.name}</strong><br/>${h.address || ''}<br/>${h.distance_km ?? '?'} km`
+          ))
+          .addTo(hospitalMap)
+      );
+    }
+
+    function renderHospitalList(hospitals, note) {
+      const listEl = document.getElementById('hospitalListContainer');
+      if (note) {
+        listEl.innerHTML = `<p class="text-xs text-amber-600">${note}</p>`;
+        return;
+      }
+      if (!hospitals.length) {
+        listEl.innerHTML = `<p class="text-xs text-slate-500">No hospitals found nearby.</p>`;
+        return;
+      }
+      listEl.innerHTML = hospitals.map((h, i) => `
+        <div class="p-3.5 rounded-2xl bg-[#F5F7F5]/80 border border-slate-200 flex items-center justify-between gap-3">
+          <div>
+            <h5 class="text-sm font-bold text-slate-900">${h.name}${i === 0 ? ' <span class="text-teal-600 text-[10px] font-black uppercase align-middle">Nearest</span>' : ''}</h5>
+            <p class="text-xs text-slate-500">${h.address || ''}${h.distance_km != null ? ` • <span class="text-teal-600 font-semibold">${h.distance_km} km</span>` : ''}</p>
+          </div>
+          <a href="tel:112" class="px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-teal-700 text-xs font-bold whitespace-nowrap">Call ER</a>
+        </div>
+      `).join('');
+    }
+
+    async function drawRouteToNearest(lat, lng, hospital) {
+      if (!window.MAPBOX_TOKEN || !hospitalMap) return;
+
+      const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${lng},${lat};${hospital.lng},${hospital.lat}?geometries=geojson&overview=full&access_token=${window.MAPBOX_TOKEN}`;
+
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        const route = data.routes && data.routes[0];
+        if (!route) return;
+
+        const geojson = { type: 'Feature', properties: {}, geometry: route.geometry };
+        const applyRoute = () => {
+          if (hospitalMap.getSource('route')) {
+            hospitalMap.getSource('route').setData(geojson);
+          } else {
+            hospitalMap.addSource('route', { type: 'geojson', data: geojson });
+            hospitalMap.addLayer({
+              id: 'route',
+              type: 'line',
+              source: 'route',
+              layout: { 'line-join': 'round', 'line-cap': 'round' },
+              paint: { 'line-color': '#14b8a6', 'line-width': 5, 'line-opacity': 0.85 }
+            });
+          }
+          const bounds = new mapboxgl.LngLatBounds();
+          route.geometry.coordinates.forEach(c => bounds.extend(c));
+          hospitalMap.fitBounds(bounds, { padding: 60 });
+        };
+
+        if (hospitalMap.isStyleLoaded()) applyRoute();
+        else hospitalMap.once('load', applyRoute);
+
+        const mins = Math.round(route.duration / 60);
+        const km = (route.distance / 1000).toFixed(1);
+        const routeInfo = document.getElementById('routeInfo');
+        routeInfo.textContent = `🚗 Route to ${hospital.name}: ${km} km • ~${mins} min drive`;
+        routeInfo.classList.remove('hidden');
+      } catch (err) {
+        console.error('Route fetch failed:', err);
+      }
+    }
+
+    // Load initial symptoms
+    loadSymptoms();
+  </script>
+</body>
+</html>

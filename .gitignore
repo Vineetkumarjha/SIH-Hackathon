@@ -1,0 +1,8 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+.env
+users.db
+.ipynb_checkpoints/
+node_modules/

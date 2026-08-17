@@ -1,0 +1,23 @@
+# Web Application & API
+Flask
+flask-cors
+python-dotenv
+
+# Auth (JWT login/signup)
+PyJWT
+bcrypt
+
+# Machine Learning & Data Processing
+numpy
+pandas
+scikit-learn
+joblib
+
+# Voice Assistant & Utilities
+pyttsx3
+SpeechRecognition
+requests
+
+# Data Visualization & Analysis
+matplotlib
+seaborn
